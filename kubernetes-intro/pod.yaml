@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: homework-pod
+  namespace: homework
+spec:
+  initContainers:
+    - name: init-generate-index
+      image: busybox:1.37.0
+      command:
+        - sh
+        - -c
+        - |
+          echo "<html><body><h1>Hello from $(hostname)!</h1></body></html>" > /init/index.html
+      volumeMounts:
+        - name: shared-data
+          mountPath: /init
+  containers:
+    - name: web-server
+      image: python:3.11-alpine
+      command: ["sh", "-c", "python3 -m http.server 8000 --directory /homework"]
+      ports:
+        - containerPort: 8000
+      volumeMounts:
+        - name: shared-data
+          mountPath: /homework
+      lifecycle:
+        preStop:
+          exec:
+            command:
+              - sh
+              - -c
+              - rm -f /homework/index.html
+  volumes:
+    - name: shared-data
+      emptyDir: {}

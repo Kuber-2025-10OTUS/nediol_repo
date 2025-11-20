@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  namespace: homework
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector: 
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      initContainers:
+        - name: init-generate-index
+          image: busybox:1.37.0
+          command:
+            - sh
+            - -c
+            - |
+              echo "<html><body><h1>Hello from $(hostname)!</h1></body></html>" > /init/index.html
+          volumeMounts:
+            - name: shared-data
+              mountPath: /init
+      containers:
+        - name: web-server
+          image: python:3.11-alpine
+          command: ["sh", "-c", "python3 -m http.server 8000 --directory /homework"]
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: shared-data
+              mountPath: /homework
+          readinessProbe:
+            exec:
+              command:
+              - ls
+              - /homework/index.html
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - rm -f /homework/index.html
+      nodeSelector:
+        homework: "true"
+      volumes:
+        - name: shared-data
+          emptyDir: {}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1 

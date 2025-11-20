@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-deployment
+  name: homework-deployment
   namespace: homework
   labels:
-    app: nginx
+    myapp: homework
 spec:
   replicas: 3
   selector: 
     matchLabels:
-      app: nginx
+      myapp: homework
   template:
     metadata:
       labels:
-        app: nginx
+        myapp: homework
     spec:
       initContainers:
         - name: init-generate-index

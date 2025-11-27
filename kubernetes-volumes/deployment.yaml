@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: homework-deployment
+  namespace: homework
+  labels:
+    myapp: homework
+spec:
+  replicas: 3
+  selector: 
+    matchLabels:
+      myapp: homework
+  template:
+    metadata:
+      labels:
+        myapp: homework
+    spec:
+      initContainers:
+        - name: init-generate-index
+          image: busybox:1.37.0
+          command:
+            - sh
+            - -c
+            - |
+              echo "<html><body><h1>Hello from $(hostname)!</h1></body></html>" > /init/index.html
+          volumeMounts:
+            - name: homework-pv-claim
+              mountPath: /init
+      containers:
+        - name: web-server
+          image: python:3.11-alpine
+          command: ["sh", "-c", "python3 -m http.server 8000 --directory /homework"]
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: homework-pv-claim
+              mountPath: /homework
+            - name: app-config
+              mountPath: /homework/conf
+          readinessProbe:
+            httpGet:
+              path: /index.html
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - rm -f /homework/index.html
+      nodeSelector:
+        homework: "true"
+      volumes:
+        - name: homework-pv-claim
+          persistentVolumeClaim:
+            claimName: homework-pv-claim
+        - name: app-config
+          configMap:
+            name: app-config
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1 

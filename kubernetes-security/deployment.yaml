@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: homework-deployment
+  namespace: homework
+  labels:
+    myapp: homework
+spec:
+  replicas: 3
+  selector: 
+    matchLabels:
+      myapp: homework
+  template:
+    metadata:
+      labels:
+        myapp: homework
+    spec:
+      serviceAccountName: monitoring
+      initContainers:
+        - name: init-generate-index
+          image: curlimages/curl:8.17.0
+          command:
+            - sh
+            - -c
+            - |
+              echo "<html><body><h1>Hello from $(hostname)!</h1></body></html>" > /init/index.html
+              TOKEN=$(cat /etc/monitoring-secret/TOKEN)
+              curl --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt -H "Authorization: Bearer $TOKEN" https://192.168.49.2:8443/metrics > /init/metrics.html
+              echo $TOKEN > /init/TOKEN
+          volumeMounts:
+            - name: homework-pv-claim
+              mountPath: /init
+            - name: monitoring-secret
+              readOnly: true
+              mountPath: "/etc/monitoring-secret/"
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            allowPrivilegeEscalation: true
+      containers:
+        - name: web-server
+          image: python:3.11-alpine
+          command: ["sh", "-c", "python3 -m http.server 8000 --directory /homework"]
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: homework-pv-claim
+              mountPath: /homework
+            - name: app-config
+              mountPath: /homework/conf
+          readinessProbe:
+            httpGet:
+              path: /index.html
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - rm -f /homework/index.html
+      nodeSelector:
+        homework: "true"
+      volumes:
+        - name: homework-pv-claim
+          persistentVolumeClaim:
+            claimName: homework-pv-claim
+        - name: app-config
+          configMap:
+            name: app-config
+        - name: monitoring-secret
+          secret:
+            secretName: monitoring-secret
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1

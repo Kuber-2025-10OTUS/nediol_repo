@@ -1,0 +1,9 @@
+Релиз {{ .Release.Name }} успешно установлен
+
+Приложение доступно по адресу:
+
+http://{{ .Values.ingressHomepage.host }}{{ .Values.ingressHomepage.paths.index }}
+
+Метрики доступны по адресу:
+
+http://{{ .Values.ingressMetrics.host }}{{ .Values.ingressMetrics.paths.metrics }}

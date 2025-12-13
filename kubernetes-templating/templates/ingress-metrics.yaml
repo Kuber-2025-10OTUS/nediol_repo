@@ -1,0 +1,22 @@
+{{- if .Values.ingressMetrics.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.ingressMetrics.name }}
+  namespace: {{ .Values.namespace }}
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /metrics.html
+spec:
+  ingressClassName: {{ .Values.ingressMetrics.className }}
+  rules:
+    - host: {{ .Values.ingressMetrics.host }}
+      http:
+        paths:
+          - path: {{ .Values.ingressMetrics.paths.metrics }}
+            pathType: Exact
+            backend:
+              service:
+                name: {{ .Values.service.name }}
+                port:
+                  number: {{ .Values.service.port }}
+{{- end }}

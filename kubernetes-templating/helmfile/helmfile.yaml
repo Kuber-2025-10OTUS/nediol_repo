@@ -1,0 +1,25 @@
+releases:
+  - name: kafka-prod
+    namespace: prod
+    chart: ./kafka
+    values:
+      - replicaCount: 5
+        image:
+          tag: 3.5.2
+        auth:
+          clientProtocol: SASL_PLAINTEXT
+          interBrokerProtocol: SASL_PLAINTEXT
+
+  - name: kafka-dev
+    namespace: dev
+    chart: ./kafka
+    values:
+      - replicaCount: 1
+        auth:
+          enabled: false
+        listeners:
+          plain:
+            port: 9092
+            type: internal
+            tls: false
+        interBrokerListenerName: plain

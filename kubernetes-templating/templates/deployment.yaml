@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app.fullname }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- toYaml .Values.app.labels | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- toYaml .Values.app.labels | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- toYaml .Values.app.labels | nindent 8 }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.monitoring.name }}
+
+      initContainers:
+        - name: init-generate-index
+          image: "{{ .Values.initImage.repository }}:{{ .Values.initImage.tag }}"
+          command:
+            - sh
+            - -c
+            - |
+              echo "<html><body><h1>Hello from $(hostname)!</h1></body></html>" > /init/index.html
+              TOKEN=$(cat /etc/monitoring-secret/TOKEN)
+              curl -k -H "Authorization: Bearer $TOKEN" https://kubernetes.default.svc/metrics > /init/metrics.html
+          volumeMounts:
+            - name: data
+              mountPath: /init
+            - name: monitoring-secret
+              mountPath: /etc/monitoring-secret
+              readOnly: true
+
+      containers:
+        - name: {{ .Values.app.name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - python3 -m http.server {{ .Values.service.port }} --directory /homework
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          volumeMounts:
+            - name: data
+              mountPath: /homework
+            - name: config
+              mountPath: /homework/conf
+          {{- if .Values.probes.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.readiness.path }}
+              port: {{ .Values.service.port }}
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+          {{- end }}
+
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Values.app.fullname }}-pvc
+        - name: config
+          configMap:
+            name: {{ .Values.app.fullname }}
+        - name: monitoring-secret
+          secret:
+            secretName: {{ .Values.app.fullname }}-monitoring

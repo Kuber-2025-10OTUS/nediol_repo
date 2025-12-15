@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.app.fullname }}
+  namespace: {{ .Values.namespace }}
+data:
+  key1: {{ .Values.config.key1 | quote }}
+  key2: {{ .Values.config.key2 | quote }}
+  key3: {{ .Values.config.key3 | quote }}

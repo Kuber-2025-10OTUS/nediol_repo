@@ -1,0 +1,49 @@
+daemonset:
+  enabled: true
+
+tolerations:
+  - key: "node-role"
+    operator: "Equal"
+    value: "infra"
+    effect: "NoSchedule"
+
+config:
+  server:
+    http_listen_port: 9080
+    grpc_listen_port: 0
+
+  positions:
+    filename: /run/promtail/positions.yaml
+
+  clients:
+    - url: http://loki.loki.svc.cluster.local:3100/loki/api/v1/push
+
+  scrape_configs:
+    - job_name: kubernetes-pods
+      kubernetes_sd_configs:
+        - role: pod
+      pipeline_stages:
+        - docker: {}
+      relabel_configs:
+        - source_labels: ['__meta_kubernetes_pod_node_name']
+          target_label: 'node'
+        - source_labels: ['__meta_kubernetes_pod_name']
+          target_label: 'pod'
+        - source_labels: ['__meta_kubernetes_namespace']
+          target_label: 'namespace'
+        - source_labels: ['__meta_kubernetes_pod_label_app']
+          target_label: 'app'
+        - action: replace
+          replacement: '$1'
+          target_label: cluster
+          source_labels: ['__meta_kubernetes_namespace']
+
+    - job_name: systemd-journal
+      journal:
+        max_age: 12h
+        path: /var/log/journal
+        labels:
+          job: systemd-journal
+      relabel_configs:
+        - source_labels: ['__meta_kubernetes_pod_node_name']
+          target_label: 'node'

@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: otus
+  namespace: argocd
+spec:
+  description: otus-homework-10
+
+  sourceRepos:
+    - https://github.com/Kuber-2025-10OTUS/nediol_repo
+
+  destinations:
+    - namespace: homework
+      server: https://kubernetes.default.svc
+    - namespace: homeworkhelm
+      server: https://kubernetes.default.svc
+
+  # разрешаем все ресурсы (для учебных целей)
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"

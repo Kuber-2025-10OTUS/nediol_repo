@@ -1,0 +1,26 @@
+replicas: 1
+
+nodeSelector:
+  node-role: "infra"
+
+tolerations:
+  - key: "node-role"
+    operator: "Equal"
+    value: "infra"
+    effect: "NoSchedule"
+
+persistence:
+  enabled: true
+  size: 5Gi
+  accessModes:
+    - ReadWriteOnce
+
+adminUser: admin
+adminPassword:
+
+service:
+  type: ClusterIP
+  port: 3000
+
+ingress:
+  enabled: false

@@ -1,0 +1,21 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: vault-backend
+  namespace: vault
+spec:
+  refreshInterval: "15s"
+  secretStoreRef:
+    name: vault-backend
+    kind: SecretStore
+  target:
+    name: cred
+  data:
+    - secretKey: username
+      remoteRef:
+        key: otus/cred
+        property: username
+    - secretKey: password
+      remoteRef:
+        key: otus/cred
+        property: password

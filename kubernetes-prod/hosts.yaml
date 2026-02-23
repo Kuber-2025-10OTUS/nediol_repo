@@ -1,0 +1,58 @@
+all:
+  hosts:
+    master-1:
+      ansible_host: 158.160.93.116
+      ip: 172.16.0.27
+      access_ip: 172.16.0.27
+      ansible_user: yc-user
+      ansible_ssh_private_key_file: /home/user/.ssh/id_ed25519
+    master-2:
+      ansible_host: 158.160.65.148
+      ip: 172.16.0.14
+      access_ip: 172.16.0.14
+      ansible_user: yc-user
+      ansible_ssh_private_key_file: /home/user/.ssh/id_ed25519
+    master-3:
+      ansible_host: 89.169.175.207
+      ip: 172.16.0.19
+      access_ip: 172.16.0.19
+      ansible_user: yc-user
+      ansible_ssh_private_key_file: /home/user/.ssh/id_ed25519
+    worker-1:
+      ansible_host: 89.169.188.236
+      ip: 172.16.0.9
+      access_ip: 172.16.0.9
+      ansible_user: yc-user
+      ansible_ssh_private_key_file: /home/user/.ssh/id_ed25519
+    worker-2:
+      ansible_host: 178.154.194.123
+      ip: 172.16.0.21
+      access_ip: 172.16.0.21
+      ansible_user: yc-user
+      ansible_ssh_private_key_file: /home/user/.ssh/id_ed25519
+
+  children:
+    kube_control_plane:
+      hosts:
+        master-1:
+        master-2:
+        master-3:
+
+    kube_node:
+      hosts:
+        master-1:
+        master-2:
+        master-3:
+        worker-1:
+        worker-2:
+
+    etcd:
+      hosts:
+        master-1:
+        master-2:
+        master-3:
+
+    k8s_cluster:
+      children:
+        kube_control_plane:
+        kube_node:
